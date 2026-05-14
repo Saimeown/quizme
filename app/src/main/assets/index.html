@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>QuizMe - Playful Neobrutalism</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playwrite+GB+J+Guides:ital@0;1&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #FAF3E0;
+            --primary-yellow: #F5C518;
+            --danger-red: #FF4D4D;
+            --success-teal: #4ECDC4;
+            --black-accent: #1A1A1A;
+            --white-surface: #FFFFFF;
+            --border-std: 4px solid var(--black-accent);
+            --shadow-card: 8px 8px 0px var(--black-accent);
+            --shadow-btn: 5px 5px 0px var(--black-accent);
+            --shadow-hero: 10px 10px 0px var(--black-accent);
+        }
+
+        body.dark-mode {
+            --bg-cream: #1A1A1A;
+            --white-surface: #2D2D2D;
+            --black-accent: #FAF3E0;
+            --primary-yellow: #FFD700;
+            --success-teal: #00BFA5;
+            --border-std: 4px solid var(--bg-cream);
+            --shadow-card: 8px 8px 0px var(--bg-cream);
+            --shadow-btn: 5px 5px 0px var(--bg-cream);
+            --shadow-hero: 10px 10px 0px var(--bg-cream);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-cream);
+            display: flex; justify-content: center;
+            height: 100vh; overflow: hidden; color: var(--black-accent);
+            overscroll-behavior: none;
+        }
+
+        html {
+            background-color: var(--bg-cream);
+            overscroll-behavior: none;
+        }
+
+        #app-frame {
+            width: 100%; max-width: 390px; height: 100%;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            padding: 24px; padding-bottom: 120px;
+            overflow-y: auto; display: none; flex-direction: column;
+            background-color: var(--bg-cream); z-index: 10;
+            opacity: 0;
+            overscroll-behavior: contain;
+        }
+        .screen.active {
+            display: flex;
+            opacity: 1;
+            z-index: 20;
+            animation: screenIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes screenIn { from { transform: translateY(20px); } to { transform: translateY(0); } }
+
+        h1 { font-weight: 900; font-size: 34px; line-height: 1.1; margin-bottom: 8px; text-transform: uppercase; }
+        h2 { font-weight: 900; font-size: 22px; margin: 24px 0 16px 0; text-transform: uppercase; }
+        p { font-weight: 700; font-size: 16px; margin-bottom: 15px; opacity: 0.8; }
+        .label-caps { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; display: block; }
+
+        .btn {
+            background-color: var(--primary-yellow); color: var(--black-accent);
+            border: var(--border-std); padding: 16px 20px; font-size: 18px; font-weight: 900;
+            border-radius: 999px; cursor: pointer; box-shadow: var(--shadow-btn);
+            transition: all 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px;
+            user-select: none;
+        }
+        .btn:active { transform: translate(4px, 4px); box-shadow: none; }
+        .btn-outline { background-color: var(--white-surface); }
+        .btn-red { background-color: var(--danger-red); }
+        .btn-teal { background-color: var(--success-teal); }
+        .btn-small { padding: 10px 14px; font-size: 14px; box-shadow: 2px 2px 0px var(--black-accent); }
+
+        input, textarea, select {
+            width: 100%; background: var(--white-surface); border: var(--border-std);
+            padding: 14px 18px; border-radius: 16px; font-family: inherit;
+            font-size: 16px; font-weight: 700; outline: none; margin-bottom: 16px;
+            appearance: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            padding-right: 45px;
+        }
+
+        .card { background: var(--white-surface); border: var(--border-std); border-radius: 20px; box-shadow: var(--shadow-card); padding: 20px; margin-bottom: 24px; position: relative; }
+
+        #tab-bar {
+            position: absolute; bottom: 24px; left: 16px; right: 16px; height: 72px;
+            background: var(--white-surface); border: var(--border-std); border-radius: 999px;
+            box-shadow: var(--shadow-hero); display: flex; justify-content: space-around; align-items: center;
+            padding: 0 12px; z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #tab-bar.hidden { transform: translateY(150%); pointer-events: none; }
+
+        .tab-item { flex: 1; display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 999px; cursor: pointer; transition: 0.2s; font-weight: 900; gap: 8px; }
+        .tab-item span { display: none !important; }
+        .tab-item.active { background: var(--primary-yellow); }
+        .tab-item svg { width: 24px; height: 24px; fill: none; stroke: var(--black-accent); stroke-width: 3px; }
+
+        .back-circle { width: 48px; height: 48px; border: var(--border-std); border-radius: 50%; background: white; box-shadow: 4px 4px 0px var(--black-accent); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 20px; flex-shrink: 0; }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Playwrite GB J Guides', cursive;
+            font-weight: 400;
+            position: relative;
+        }
+        .logo-box::before {
+            content: "";
+            position: absolute;
+            left: -20px;
+            right: -20px;
+            top: 50%;
+            height: 100%;
+            transform: translateY(-50%);
+            background: linear-gradient(
+                transparent 25%,
+                var(--black-accent) 25%, var(--black-accent) 28%,
+                transparent 28%, transparent 48%,
+                var(--black-accent) 48%, var(--black-accent) 51%,
+                transparent 51%, transparent 71%,
+                var(--black-accent) 71%, var(--black-accent) 74%,
+                transparent 74%
+            );
+            opacity: 0.15;
+            z-index: -1;
+        }
+        .logo-q { font-size: 50px; margin-right: 15px; }
+        .logo-m { font-size: 50px; background: var(--primary-yellow); padding: 10px 15px; border: 4px solid #1A1A1A; transform: rotate(2deg); color: #1A1A1A; line-height: 1; }
+        .logo-small::before { left: -10px; right: -10px; }
+        .logo-small .logo-q { font-size: 24px; margin-right: 10px; }
+        .logo-small .logo-m { font-size: 24px; padding: 5px 8px; border-width: 3px; }
+
+        .user-avatar {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            min-height: 52px;
+            border: var(--border-std);
+            border-radius: 50%;
+            background: var(--success-teal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            box-shadow: 4px 4px 0px var(--black-accent);
+            flex-shrink: 0;
+            aspect-ratio: 1/1;
+        }
+
+        .deck-card { padding: 0; overflow: hidden; }
+        .deck-banner { height: 120px; padding: 24px; display: flex; align-items: flex-end; border-bottom: var(--border-std); }
+        .deck-name { font-size: 30px; font-weight: 900; color: white; text-transform: uppercase; text-shadow: 3px 3px 0px var(--black-accent); transform: rotate(-2deg); }
+        .deck-stats-row { display: flex; justify-content: space-between; padding: 16px 20px; font-weight: 900; font-size: 14px; }
+        .progress-bar { height: 18px; background: var(--bg-cream); border: var(--border-std); border-radius: 999px; margin: 0 20px 20px 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary-yellow); transition: width 0.5s; }
+
+        .streak-badge { background: var(--white-surface); border: var(--border-std); border-radius: 999px; padding: 4px 12px; font-weight: 900; display: flex; align-items: center; gap: 4px; box-shadow: 2px 2px 0px var(--black-accent); margin-right: 10px; }
+
+        .timer-container { height: 8px; background: var(--bg-cream); border: 2px solid var(--black-accent); border-radius: 999px; overflow: hidden; margin-bottom: 15px; display: none; }
+        .timer-fill { height: 100%; background: var(--danger-red); width: 100%; }
+
+        .manage-card-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 2px solid var(--black-accent); }
+        .manage-card-item:last-child { border-bottom: none; }
+
+        .color-dot { width: 44px; height: 44px; border: var(--border-std); border-radius: 50%; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .color-dot.active { transform: scale(1.15); box-shadow: 4px 4px 0px var(--black-accent); }
+
+        .card-container { perspective: 1000px; width: 100%; height: 380px; position: relative; margin: 20px 0; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; cursor: pointer; }
+        .card-container.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border: 4px solid var(--black-accent); border-radius: 24px; box-shadow: var(--shadow-hero); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        .card-front { background: var(--white-surface); }
+        .card-back { background: var(--primary-yellow); transform: rotateY(180deg); }
+        .card-text { font-size: 28px; font-weight: 900; text-transform: uppercase; line-height: 1.2; word-wrap: break-word; }
+
+        .stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 100px; z-index: 50; transition: 0.4s; pointer-events: none; }
+        .stamp.pop { transform: translate(-50%, -50%) scale(1.2) rotate(-10deg); opacity: 1; }
+
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 30px; }
+        #modal { background: var(--bg-cream); border: 4px solid var(--black-accent); border-radius: 24px; padding: 30px; width: 100%; box-shadow: 8px 8px 0px var(--black-accent); text-align: center; }
+
+        .hidden { display: none !important; }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    </style>
+</head>
+<body>
+    <div id="app-frame">
+        <div id="modal-overlay">
+            <div id="modal">
+                <h2 id="modal-title">Alert</h2>
+                <p id="modal-msg"></p>
+                <button class="btn" style="width: 100%" onclick="closeAlert()">GOT IT!</button>
+            </div>
+        </div>
+
+        <div id="screen-splash" class="screen active" style="justify-content: center; align-items: center;">
+            <div class="logo-box"><span class="logo-q">Quiz</span><span class="logo-m">Me</span></div>
+            <p style="margin-top: 20px; font-weight: 900;">LEVEL UP YOUR BRAIN</p>
+        </div>
+
+        <div id="screen-login" class="screen">
+            <div class="logo-box logo-small" style="margin: 40px 0;"><span class="logo-q">Quiz</span><span class="logo-m">Me</span></div>
+            <h1>WELCOME BACK</h1>
+            <p>Ready for a quick study session?</p>
+            <input type="text" id="login-email" placeholder="EMAIL ADDRESS">
+            <input type="password" id="login-pass" placeholder="PASSWORD">
+            <button class="btn" style="width: 100%" onclick="handleLogin()">LOG IN →</button>
+            <div style="text-align: center; margin: 20px 0; font-weight: 900;">OR</div>
+            <button class="btn btn-outline" style="width: 100%" onclick="showScreen('register')">CREATE NEW ACCOUNT</button>
+        </div>
+
+        <div id="screen-register" class="screen">
+            <div class="back-circle" onclick="showScreen('login')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <h1>JOIN THE CLUB</h1>
+            <input type="text" id="reg-name" placeholder="FULL NAME">
+            <input type="text" id="reg-email" placeholder="EMAIL">
+            <input type="password" id="reg-pass" placeholder="PASSWORD">
+            <button class="btn" style="width: 100%" onclick="handleRegister()">SIGN ME UP →</button>
+        </div>
+
+        <div id="screen-decks" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="logo-box logo-small"><span class="logo-q">Quiz</span><span class="logo-m">Me</span></div>
+                <div id="streak-display" class="streak-badge">🔥 0</div>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 24px;">
+                <div class="card" style="flex: 1; padding: 16px; margin: 0; text-align: center; background: var(--primary-yellow); color: #1A1A1A; border: 4px solid #1A1A1A; box-shadow: 6px 6px 0px #1A1A1A;">
+                    <div id="stat-decks" style="font-size: 32px; font-weight: 900;">0</div>
+                    <span class="label-caps" style="margin: 0; color: #1A1A1A;">Decks</span>
+                </div>
+                <div class="card" style="flex: 1; padding: 16px; margin: 0; text-align: center; background: var(--success-teal); color: #1A1A1A; border: 4px solid #1A1A1A; box-shadow: 6px 6px 0px #1A1A1A;">
+                    <div id="stat-mastery" style="font-size: 32px; font-weight: 900;">0%</div>
+                    <span class="label-caps" style="margin: 0; color: #1A1A1A;">Mastery</span>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 40px;">YOUR DECKS</h2>
+            <div id="decks-list"></div>
+        </div>
+
+        <button id="add-deck-fab" class="btn hidden" style="position: absolute; bottom: 110px; right: 24px; width: 64px; height: 64px; border-radius: 50%; z-index: 150; box-shadow: 4px 4px 0px var(--black-accent);" onclick="showScreen('add-deck')"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+
+        <div id="screen-add-deck" class="screen">
+            <div class="back-circle" onclick="showScreen('decks')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <h1>NEW SUBJECT</h1>
+            <span class="label-caps">NAME</span>
+            <input type="text" id="deck-name-input" placeholder="e.g. WORLD HISTORY">
+            <span class="label-caps">COLOR THEME</span>
+            <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;" id="color-picker"></div>
+            <button class="btn" style="width: 100%" onclick="saveDeck()">CREATE DECK →</button>
+        </div>
+
+        <div id="screen-add-card" class="screen">
+            <div class="back-circle" onclick="showScreen('decks')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <h1 id="add-card-header">ADD CARD</h1>
+            <span class="label-caps">QUESTION</span>
+            <textarea id="card-q" style="height: 120px;" placeholder="WHAT IS..."></textarea>
+            <span class="label-caps">ANSWER</span>
+            <textarea id="card-a" style="height: 120px;" placeholder="THE ANSWER IS..."></textarea>
+            <button class="btn" style="width: 100%" onclick="saveCard()">SAVE CARD +</button>
+        </div>
+
+        <div id="screen-study" class="screen">
+            <div class="back-circle" onclick="endStudySession()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <div id="study-timer-box" class="timer-container"><div id="study-timer-fill" class="timer-fill"></div></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span id="study-deck-title" class="label-caps" style="background: var(--primary-yellow); padding: 4px 10px; border: 2px solid black;">HISTORY</span>
+                <span id="study-progress-count" style="font-weight: 900;">1 / 10</span>
+            </div>
+            <div class="progress-bar" style="margin: 10px 0;"><div id="study-bar-fill" class="progress-fill" style="width: 0%;"></div></div>
+            <div class="card-container" id="study-card" onclick="flipStudyCard()">
+                <div class="card-inner">
+                    <div class="card-face card-front"><div id="study-q-text" class="card-text">QUESTION?</div></div>
+                    <div class="card-face card-back"><div id="study-a-text" class="card-text">ANSWER!</div></div>
+                </div>
+                <div id="study-stamp" class="stamp"></div>
+            </div>
+            <div id="study-controls" class="hidden" style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+                <button class="btn btn-teal" onclick="rateStudyCard(true)">GOT IT ✓</button>
+                <button class="btn btn-red" onclick="rateStudyCard(false)">TRY AGAIN</button>
+            </div>
+        </div>
+
+        <div id="screen-weak" class="screen">
+            <h1>WEAK SPOTS</h1>
+            <span class="label-caps">FILTER BY DECK</span>
+            <select id="weak-deck-filter" onchange="renderWeakCards()" style="padding-left: 10px;"></select>
+            <div id="weak-list"></div>
+        </div>
+
+        <div id="screen-stats" class="screen">
+            <div class="back-circle" onclick="showScreen('decks')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <h1>DECK STATS</h1>
+            <div id="stats-content"></div>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 20px;" onclick="showScreen('manage-deck')">MANAGE CARDS</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 15px; color: var(--danger-red); border-color: var(--danger-red);" onclick="resetProgress()">RESET MASTERY</button>
+        </div>
+
+        <div id="screen-manage-deck" class="screen">
+            <div class="back-circle" onclick="showScreen('stats')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <h1 id="manage-deck-title">MANAGE DECK</h1>
+            <div class="card" style="padding: 0; overflow: hidden; margin-top: 10px;" id="manage-cards-list"></div>
+            <button class="btn btn-red" style="width: 100%; margin-top: 30px;" onclick="confirmDeleteDeck()">DELETE ENTIRE DECK</button>
+        </div>
+
+        <div id="screen-settings" class="screen">
+            <h1>SETTINGS</h1>
+            <div class="card">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="settings-avatar" class="user-avatar" style="width: 60px; height: 60px; min-width: 60px; min-height: 60px; font-size: 24px;">?</div>
+                    <div><h2 id="settings-name" style="margin: 0;">USER</h2><p id="settings-email" style="margin: 0; font-size: 14px;">email@example.com</p></div>
+                </div>
+            </div>
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="label-caps" style="margin:0;">DARK MODE</span>
+                <button class="btn btn-small" id="theme-toggle" onclick="toggleTheme()">OFF</button>
+            </div>
+            <button class="btn btn-red" style="width: 100%" onclick="wipeData()">WIPE EVERYTHING (DANGER!)</button>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 15px;" onclick="handleLogout()">LOG OUT</button>
+        </div>
+
+        <div id="screen-timer-config" class="screen">
+            <div class="back-circle" onclick="showScreen('decks')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+            <h1>READY?</h1>
+            <p>CHOOSE YOUR CHALLENGE LEVEL:</p>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 10px;">
+                <button class="btn" onclick="startStudyWithTimer(10)">10 SEC (HARDCORE)</button>
+                <button class="btn btn-outline" onclick="startStudyWithTimer(30)">30 SEC (BALANCED)</button>
+                <button class="btn btn-outline" onclick="startStudyWithTimer(60)">60 SEC (CHILL)</button>
+                <button class="btn btn-teal" onclick="startStudyWithTimer(0)">NO TIMER (RELAXED)</button>
+            </div>
+        </div>
+
+        <nav id="tab-bar">
+            <div class="tab-item active" onclick="showScreen('decks')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg><span>DECKS</span></div>
+            <div class="tab-item" onclick="startRandomStudy()"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg><span>STUDY</span></div>
+            <div class="tab-item" onclick="showScreen('weak')"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg><span>WEAK</span></div>
+            <div class="tab-item" onclick="showScreen('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>SET</span></div>
+        </nav>
+    </div>
+
+    <script>
+        let db = { users: [], decks: [], cards: [], currentUser: null };
+        let selectedColor = '#4ECDC4';
+        let currentDeckId = null;
+        let studySession = null;
+        let timerInterval = null;
+        let editingCardId = null;
+        let selectedDuration = 0;
+        let isRandomSession = false;
+
+        const colors = ['#F5C518', '#4ECDC4', '#FF4D4D', '#A29BFE', '#FF9F43', '#1A1A1A'];
+
+        window.onload = () => {
+            const data = localStorage.getItem('quizme_v5');
+            if (data) db = JSON.parse(data);
+            initColorPicker();
+            applyTheme();
+            setTimeout(() => {
+                const startScreen = db.currentUser ? 'decks' : 'login';
+                history.replaceState({ screenId: startScreen }, "", "#" + startScreen);
+                showScreen(startScreen, false);
+            }, 2000);
+        };
+
+        window.onpopstate = function(event) {
+            if (event.state && event.state.screenId) {
+                showScreen(event.state.screenId, false);
+            } else {
+                const defaultScreen = db.currentUser ? 'decks' : 'login';
+                showScreen(defaultScreen, false);
+            }
+        };
+
+        function saveDB() { localStorage.setItem('quizme_v5', JSON.stringify(db)); }
+
+        function showAlert(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+        function closeAlert() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        function showScreen(id, pushState = true) {
+            document.querySelectorAll('.screen').forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            const target = document.getElementById('screen-' + id);
+            if (!target) return;
+
+            target.style.display = 'flex';
+            setTimeout(() => target.classList.add('active'), 10);
+
+            const tabBar = document.getElementById('tab-bar');
+            const mainTabs = ['decks', 'weak', 'settings', 'stats'];
+            tabBar.className = mainTabs.includes(id) ? '' : 'hidden';
+
+            const addDeckFab = document.getElementById('add-deck-fab');
+            if (addDeckFab) {
+                addDeckFab.classList.toggle('hidden', id !== 'decks');
+            }
+
+            document.querySelectorAll('.tab-item').forEach(item => {
+                const span = item.querySelector('span');
+                if (span) {
+                    const lbl = span.innerText.toLowerCase();
+                    item.classList.toggle('active', (id === 'decks' && lbl === 'decks') || (id === 'weak' && lbl === 'weak') || (id === 'settings' && lbl === 'set'));
+                }
+            });
+
+            if (id === 'decks') renderDecks();
+            if (id === 'weak') renderWeakCards();
+            if (id === 'settings') renderSettings();
+            if (id === 'manage-deck') renderManageDeck();
+
+            if (pushState) {
+                history.pushState({ screenId: id }, "", "#" + id);
+            }
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value.trim(), pass = document.getElementById('login-pass').value;
+            const user = db.users.find(u => u.email === email && u.password === pass);
+            if (user) {
+                db.currentUser = user;
+                saveDB();
+                history.replaceState({ screenId: 'decks' }, "", "#decks");
+                showScreen('decks', false);
+            }
+            else showAlert("LOGIN FAILED", "Check your email and password.");
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('reg-name').value.trim(), email = document.getElementById('reg-email').value.trim(), pass = document.getElementById('reg-pass').value;
+            if (!name || !email || !pass) return showAlert("MISSING INFO", "Fill in all fields.");
+            if (db.users.find(u => u.email === email)) return showAlert("ALREADY EXISTS", "That email is taken.");
+            const newUser = { id: Date.now(), name, email, password: pass };
+            db.users.push(newUser); db.currentUser = newUser; saveDB();
+            showAlert("WELCOME!", "Registration successful!");
+            history.replaceState({ screenId: 'decks' }, "", "#decks");
+            showScreen('decks', false);
+        }
+
+        function handleLogout() {
+            db.currentUser = null;
+            saveDB();
+            history.replaceState({ screenId: 'login' }, "", "#login");
+            showScreen('login', false);
+        }
+
+        function initColorPicker() {
+            const picker = document.getElementById('color-picker');
+            picker.innerHTML = '';
+            colors.forEach(c => {
+                const dot = document.createElement('div');
+                dot.className = 'color-dot' + (c === selectedColor ? ' active' : '');
+                dot.style.backgroundColor = c;
+                dot.onclick = () => {
+                    selectedColor = c;
+                    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+                };
+                picker.appendChild(dot);
+            });
+        }
+
+        function renderDecks() {
+            if (!db.currentUser) return;
+
+            // Streak check & display
+            checkStreak();
+            document.getElementById('streak-display').innerText = `🔥 ${db.currentUser.streak || 0}`;
+
+            const myDecks = db.decks.filter(d => d.userId === db.currentUser.id);
+            document.getElementById('stat-decks').innerText = myDecks.length;
+
+            const allCards = db.cards.filter(c => myDecks.some(d => d.id === c.deckId));
+            const totalMastery = allCards.length ? allCards.reduce((acc, c) => acc + (c.mastery || 0), 0) / allCards.length : 0;
+            document.getElementById('stat-mastery').innerText = Math.round(totalMastery) + '%';
+
+            const list = document.getElementById('decks-list');
+            list.innerHTML = myDecks.length ? '' : '<div class="card" style="border-style: dashed; text-align: center;">NO DECKS YET. TAP + TO BEGIN!</div>';
+
+            myDecks.forEach(deck => {
+                const deckCards = db.cards.filter(c => c.deckId === deck.id);
+                const avgMastery = deckCards.length ? deckCards.reduce((acc, c) => acc + (c.mastery || 0), 0) / deckCards.length : 0;
+                const progress = Math.round(avgMastery);
+
+                const card = document.createElement('div');
+                card.className = 'card deck-card';
+                card.style.border = '4px solid #1A1A1A';
+                card.style.boxShadow = '8px 8px 0px #1A1A1A';
+                card.onclick = () => startStudy(deck.id);
+                card.innerHTML = `
+                    <div class="deck-banner" style="background: ${deck.color}; border-bottom: 4px solid #1A1A1A;">
+                        <div class="deck-name" style="color: white; text-shadow: 2px 2px 0px #1A1A1A;">${deck.name}</div>
+                    </div>
+                    <div class="deck-stats-row">
+                        <span>${deckCards.length} CARDS</span>
+                        <span>${progress}% MASTERY</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
+                    <div style="padding: 0 20px 20px 20px; display: flex; gap: 10px;">
+                        <button class="btn btn-outline btn-small" style="flex: 1" onclick="event.stopPropagation(); goToAddCard(${deck.id})">+ ADD</button>
+                        <button class="btn btn-outline btn-small" style="flex: 1" onclick="event.stopPropagation(); showDeckStats(${deck.id})">STATS</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            const filter = document.getElementById('weak-deck-filter');
+            filter.innerHTML = '<option value="all">ALL SUBJECTS</option>';
+            myDecks.forEach(d => { filter.innerHTML += `<option value="${d.id}">${d.name}</option>`; });
+        }
+
+        function saveDeck() {
+            const name = document.getElementById('deck-name-input').value.trim();
+            if (!name) return showAlert("MISSING NAME", "What should we call this?");
+            db.decks.push({ id: Date.now(), userId: db.currentUser.id, name: name.toUpperCase(), color: selectedColor });
+            saveDB(); document.getElementById('deck-name-input').value = ''; showScreen('decks');
+        }
+
+        function goToAddCard(id) { currentDeckId = id; showScreen('add-card'); }
+
+        function saveCard() {
+            const q = document.getElementById('card-q').value.trim(), a = document.getElementById('card-a').value.trim();
+            if (!q || !a) return showAlert("MISSING CONTENT", "Card needs both sides filled.");
+
+            if (editingCardId) {
+                const card = db.cards.find(c => c.id === editingCardId);
+                card.question = q;
+                card.answer = a;
+                editingCardId = null;
+                showAlert("UPDATED!", "Flashcard has been modified.");
+                showScreen('manage-deck');
+            } else {
+                db.cards.push({ id: Date.now(), deckId: currentDeckId, question: q, answer: a, correct: 0, wrong: 0, mastery: 0 });
+                document.getElementById('card-q').value = ''; document.getElementById('card-a').value = '';
+                showAlert("SAVED!", "Flashcard ready for study.");
+            }
+            saveDB();
+        }
+
+        function renderManageDeck() {
+            const deck = db.decks.find(d => d.id === currentDeckId);
+            document.getElementById('manage-deck-title').innerText = deck.name;
+            const cards = db.cards.filter(c => c.deckId === currentDeckId);
+            const list = document.getElementById('manage-cards-list');
+            list.innerHTML = cards.length ? '' : '<div style="padding: 20px; text-align: center; opacity: 0.5;">NO CARDS IN THIS DECK.</div>';
+
+            cards.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'manage-card-item';
+                item.innerHTML = `
+                    <div style="flex: 1; overflow: hidden; margin-right: 15px;">
+                        <div style="font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.question}</div>
+                        <div style="font-size: 12px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.answer}</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-outline btn-small" style="padding: 6px 10px;" onclick="openEditCard(${c.id})">✎</button>
+                        <button class="btn btn-outline btn-small" style="padding: 6px 10px; color: var(--danger-red); border-color: var(--danger-red);" onclick="deleteCard(${c.id})">✕</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function openEditCard(cardId) {
+            editingCardId = cardId;
+            const card = db.cards.find(c => c.id === cardId);
+            document.getElementById('add-card-header').innerText = "EDIT CARD";
+            document.getElementById('card-q').value = card.question;
+            document.getElementById('card-a').value = card.answer;
+            showScreen('add-card');
+        }
+
+        // Reset header when adding new card
+        function goToAddCard(id) {
+            currentDeckId = id;
+            editingCardId = null;
+            document.getElementById('add-card-header').innerText = "ADD CARD";
+            document.getElementById('card-q').value = '';
+            document.getElementById('card-a').value = '';
+            showScreen('add-card');
+        }
+
+        function deleteCard(id) {
+            if (confirm("Delete this card permanently?")) {
+                db.cards = db.cards.filter(c => c.id !== id);
+                saveDB(); renderManageDeck();
+            }
+        }
+
+        function confirmDeleteDeck() {
+            if (confirm("DELETE THIS ENTIRE SUBJECT? All cards and progress will be lost forever.")) {
+                db.decks = db.decks.filter(d => d.id !== currentDeckId);
+                db.cards = db.cards.filter(c => c.deckId !== currentDeckId);
+                saveDB(); showScreen('decks');
+            }
+        }
+
+        function startStudy(deckId) {
+            currentDeckId = deckId;
+            isRandomSession = false;
+            showScreen('timer-config');
+        }
+
+        function startRandomStudy() {
+            isRandomSession = true;
+            showScreen('timer-config');
+        }
+
+        function startStudyWithTimer(duration) {
+            selectedDuration = duration;
+
+            let cards = [];
+            if (isRandomSession) {
+                const userDecks = db.decks.filter(d => d.userId === db.currentUser.id);
+                cards = db.cards.filter(c => userDecks.some(d => d.id === c.deckId) && c.mastery < 100);
+            } else {
+                cards = db.cards.filter(c => c.deckId === currentDeckId && c.mastery < 100);
+            }
+
+            if (!cards.length) {
+                showAlert("NO CARDS", "No unmastered cards found.");
+                return showScreen('decks');
+            }
+
+            studySession = {
+                cards: cards.sort(() => Math.random() - 0.5).slice(0, 10),
+                currentIndex: 0,
+                isQuickFire: duration > 0
+            };
+            studySession.total = studySession.cards.length;
+            updateStudyUI();
+            showScreen('study');
+        }
+
+        function updateStudyUI() {
+            stopTimer();
+            const card = studySession.cards[studySession.currentIndex];
+            const deck = db.decks.find(d => d.id === card.deckId);
+            document.getElementById('study-deck-title').innerText = deck.name;
+            document.getElementById('study-deck-title').style.backgroundColor = deck.color;
+            document.getElementById('study-q-text').innerText = card.question;
+            document.getElementById('study-a-text').innerText = card.answer;
+            document.getElementById('study-progress-count').innerText = `${studySession.currentIndex + 1} / ${studySession.total}`;
+            document.getElementById('study-bar-fill').style.width = `${(studySession.currentIndex / studySession.total) * 100}%`;
+            document.getElementById('study-card').classList.remove('flipped');
+            document.getElementById('study-controls').classList.add('hidden');
+            document.getElementById('study-stamp').className = 'stamp';
+
+            if (studySession.isQuickFire) startTimer();
+        }
+
+        function startTimer() {
+            const timerBox = document.getElementById('study-timer-box');
+            const timerFill = document.getElementById('study-timer-fill');
+            timerBox.style.display = 'block';
+            let timeLeft = 100;
+            timerFill.style.width = '100%';
+
+            const step = 100 / (selectedDuration * 10);
+
+            timerInterval = setInterval(() => {
+                timeLeft -= step;
+                timerFill.style.width = timeLeft + '%';
+                if (timeLeft <= 0) {
+                    stopTimer();
+                    flipStudyCard();
+                    showAlert("TIME'S UP!", "Too slow! Try again.");
+                }
+            }, 100);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('study-timer-box').style.display = 'none';
+        }
+
+        function flipStudyCard() {
+            stopTimer();
+            document.getElementById('study-card').classList.add('flipped');
+            document.getElementById('study-controls').classList.remove('hidden');
+        }
+
+        function endStudySession() {
+            stopTimer();
+            showScreen('decks');
+        }
+
+        function rateStudyCard(isCorrect) {
+            const card = studySession.cards[studySession.currentIndex];
+            const original = db.cards.find(c => c.id === card.id);
+            const stamp = document.getElementById('study-stamp');
+
+            if (isCorrect) {
+                original.correct++;
+                original.mastery = Math.min(100, (original.mastery || 0) + 25);
+                stamp.innerText = '✓'; stamp.className = 'stamp pop'; stamp.style.color = 'var(--success-teal)';
+            } else {
+                original.wrong++;
+                original.mastery = Math.max(0, (original.mastery || 0) - 15);
+                stamp.innerText = '✕'; stamp.className = 'stamp pop'; stamp.style.color = 'var(--danger-red)';
+            }
+            saveDB();
+
+            setTimeout(() => {
+                studySession.currentIndex++;
+                if (studySession.currentIndex < studySession.total) updateStudyUI();
+                else {
+                    updateStreak();
+                    showAlert("SUCCESS!", "Session finished. Streak updated!");
+                    showScreen('decks');
+                }
+            }, 700);
+        }
+
+        function checkStreak() {
+            if (!db.currentUser.lastStudyDate) return;
+            const last = new Date(db.currentUser.lastStudyDate);
+            const today = new Date();
+            const diffDays = Math.floor((today - last) / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 1) {
+                db.currentUser.streak = 0;
+                saveDB();
+            }
+        }
+
+        function updateStreak() {
+            const today = new Date().toDateString();
+            if (db.currentUser.lastStudyDate !== today) {
+                db.currentUser.streak = (db.currentUser.streak || 0) + 1;
+                db.currentUser.lastStudyDate = today;
+                saveDB();
+            }
+        }
+
+        function toggleTheme() {
+            db.darkMode = !db.darkMode;
+            applyTheme();
+            saveDB();
+        }
+
+        function applyTheme() {
+            document.body.classList.toggle('dark-mode', db.darkMode);
+            const btn = document.getElementById('theme-toggle');
+            if (btn) btn.innerText = db.darkMode ? 'ON' : 'OFF';
+
+            if (window.Android && window.Android.updateTheme) {
+                window.Android.updateTheme(db.darkMode);
+            }
+        }
+
+        function renderWeakCards() {
+            const deckId = document.getElementById('weak-deck-filter').value;
+            let weak = db.cards.filter(c => {
+                const deck = db.decks.find(d => d.id === c.deckId);
+                return deck && deck.userId === db.currentUser.id && (deckId === 'all' || c.deckId == deckId) && (c.wrong > 0);
+            });
+
+            weak.sort((a,b) => ((b.wrong+1) / (b.wrong + b.correct + 1)) - ((a.wrong+1) / (a.wrong + a.correct + 1)));
+
+            const list = document.getElementById('weak-list');
+            list.innerHTML = weak.length ? '' : '<div class="card" style="text-align: center; opacity: 0.5;">STUDY MORE TO SEE DATA.</div>';
+
+            weak.forEach(c => {
+                const failRate = Math.round((c.wrong / (c.wrong + c.correct)) * 100);
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="max-width: 70%">
+                            <span class="label-caps" style="color: var(--danger-red)">FAIL RATE: ${failRate}%</span>
+                            <div style="font-weight: 900; font-size: 18px; margin-top: 4px;">${c.question}</div>
+                        </div>
+                        <button class="btn btn-outline btn-small" onclick="quickStudyCard(${c.id})">PRACTICE</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function showDeckStats(id) {
+            currentDeckId = id;
+            const deck = db.decks.find(d => d.id === id);
+            const cards = db.cards.filter(c => c.deckId === id);
+            const totalC = cards.reduce((acc, c) => acc + (c.correct || 0), 0);
+            const totalW = cards.reduce((acc, c) => acc + (c.wrong || 0), 0);
+            const mastered = cards.filter(c => c.mastery >= 100).length;
+
+            document.getElementById('stats-content').innerHTML = `
+                <div class="card" style="background: ${deck.color}">
+                    <h1 style="color: white; text-shadow: 2px 2px 0px black; margin: 0;">${deck.name}</h1>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="card" style="margin:0; text-align: center;"><div style="font-size: 28px; font-weight: 900;">${cards.length}</div><span class="label-caps">Total Cards</span></div>
+                    <div class="card" style="margin:0; text-align: center;"><div style="font-size: 28px; font-weight: 900;">${mastered}</div><span class="label-caps">Mastered</span></div>
+                    <div class="card" style="margin:0; text-align: center; background: #e8fcf9;"><div style="font-size: 28px; font-weight: 900; color: var(--success-teal);">${totalC}</div><span class="label-caps">Correct</span></div>
+                    <div class="card" style="margin:0; text-align: center; background: #fff5f5;"><div style="font-size: 28px; font-weight: 900; color: var(--danger-red);">${totalW}</div><span class="label-caps">Misses</span></div>
+                </div>
+            `;
+            showScreen('stats');
+        }
+
+        function renderSettings() {
+            document.getElementById('settings-name').innerText = db.currentUser.name.toUpperCase();
+            document.getElementById('settings-email').innerText = db.currentUser.email;
+            document.getElementById('settings-avatar').innerText = db.currentUser.name[0].toUpperCase();
+        }
+
+        function resetProgress() {
+            if (confirm("Reset mastery for this deck? Cards stay, scores go to zero.")) {
+                db.cards.forEach(c => { if(c.deckId === currentDeckId) { c.correct = 0; c.wrong = 0; c.mastery = 0; } });
+                saveDB(); showScreen('decks');
+            }
+        }
+
+        function wipeData() { if (confirm("WIPE EVERYTHING? This clears all users, decks, and cards.")) { localStorage.clear(); location.reload(); } }
+
+        function quickStudyCard(id) {
+            const card = db.cards.find(c => c.id === id);
+            studySession = { cards: [card], currentIndex: 0, total: 1 };
+            updateStudyUI(); showScreen('study');
+        }
+    </script>
+</body>
+</html>
