@@ -401,6 +401,10 @@
         window.onload = () => {
             const data = localStorage.getItem('quizme_v5');
             if (data) db = JSON.parse(data);
+
+            // Force Light Mode as default on every app start
+            db.darkMode = false;
+
             initColorPicker();
             applyTheme();
             setTimeout(() => {
