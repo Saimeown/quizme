@@ -231,8 +231,8 @@
         <div id="modal-overlay">
             <div id="modal">
                 <h2 id="modal-title">Alert</h2>
-                <p id="modal-msg"></p>
-                <button class="btn" style="width: 100%" onclick="closeAlert()">GOT IT!</button>
+                <p id="modal-msg" style="margin-bottom: 20px;"></p>
+                <div id="modal-buttons"></div>
             </div>
         </div>
 
@@ -421,9 +421,40 @@
 
         function saveDB() { localStorage.setItem('quizme_v5', JSON.stringify(db)); }
 
-        function showAlert(title, msg) {
+        function showAlert(title, msg, onConfirm = null) {
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-msg').innerText = msg;
+            const container = document.getElementById('modal-buttons');
+            container.innerHTML = '';
+
+            if (onConfirm) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'btn btn-outline';
+                cancelBtn.style.flex = '1';
+                cancelBtn.innerText = 'CANCEL';
+                cancelBtn.onclick = closeAlert;
+
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'btn btn-red';
+                confirmBtn.style.flex = '1';
+                confirmBtn.innerText = 'DO IT';
+                confirmBtn.onclick = () => { onConfirm(); closeAlert(); };
+
+                const flexDiv = document.createElement('div');
+                flexDiv.style.display = 'flex';
+                flexDiv.style.gap = '15px';
+                flexDiv.appendChild(cancelBtn);
+                flexDiv.appendChild(confirmBtn);
+                container.appendChild(flexDiv);
+            } else {
+                const okBtn = document.createElement('button');
+                okBtn.className = 'btn';
+                okBtn.style.width = '100%';
+                okBtn.innerText = 'GOT IT!';
+                okBtn.onclick = closeAlert;
+                container.appendChild(okBtn);
+            }
+
             document.getElementById('modal-overlay').style.display = 'flex';
         }
         function closeAlert() { document.getElementById('modal-overlay').style.display = 'none'; }
@@ -628,18 +659,18 @@
         }
 
         function deleteCard(id) {
-            if (confirm("Delete this card permanently?")) {
+            showAlert("DELETE CARD?", "Are you sure? This card will be gone forever.", () => {
                 db.cards = db.cards.filter(c => c.id !== id);
                 saveDB(); renderManageDeck();
-            }
+            });
         }
 
         function confirmDeleteDeck() {
-            if (confirm("DELETE THIS ENTIRE DECK? All cards and progress will be lost forever.")) {
+            showAlert("DELETE DECK?", "ALL cards and progress will be lost forever. Still want to delete?", () => {
                 db.decks = db.decks.filter(d => d.id !== currentDeckId);
                 db.cards = db.cards.filter(c => c.deckId !== currentDeckId);
                 saveDB(); showScreen('decks');
-            }
+            });
         }
 
         function startStudy(deckId) {
@@ -817,13 +848,17 @@
         }
 
         function resetProgress() {
-            if (confirm("Reset mastery for this deck? Cards stay, scores go to zero.")) {
+            showAlert("RESET MASTERY?", "Keep your cards but set all scores to zero?", () => {
                 db.cards.forEach(c => { if(c.deckId === currentDeckId) { c.correct = 0; c.wrong = 0; c.mastery = 0; } });
                 saveDB(); showScreen('decks');
-            }
+            });
         }
 
-        function wipeData() { if (confirm("WIPE EVERYTHING? This clears all users, decks, and cards.")) { localStorage.clear(); location.reload(); } }
+        function wipeData() {
+            showAlert("WIPE EVERYTHING?", "This clears ALL users, decks, and cards. You can't undo this!", () => {
+                localStorage.clear(); location.reload();
+            });
+        }
 
         function quickStudyCard(id) {
             const card = db.cards.find(c => c.id === id);
